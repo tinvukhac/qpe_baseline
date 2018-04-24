@@ -9,6 +9,7 @@ Logistic Regression 3-class Classifier
 """
 
 import csv
+import math
 import numpy as np
 from sklearn import linear_model
 
@@ -20,6 +21,20 @@ train_data = np.array(x).astype("float")
 reader = csv.reader(open("test.csv", "rb"), delimiter=",")
 x = list(reader)
 test_data = np.array(x).astype("float")
+
+reader = csv.reader(open("micro_dataset2.csv", "rb"), delimiter=",")
+x = list(reader)
+micro_data = np.array(x).astype("float")
+size = len(micro_data)
+test_size = math.ceil(size/5)
+train_size = size - test_size
+train_data = micro_data[:int(train_size), :]
+test_data = micro_data[int(test_size):, :]
+print "train"
+print train_data
+print "test"
+print test_data
+
 
 # Divide data into features and target
 X_train = train_data[:, :-1]
