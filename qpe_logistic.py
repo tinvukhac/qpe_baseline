@@ -3,60 +3,55 @@
 
 """
 =========================================================
-Logistic Regression 3-class Classifier
+Logistic Regression 2-class Classifier
 =========================================================
 
 """
 
 import csv
-import math
 import numpy as np
 from sklearn import linear_model
+from sklearn import metrics
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_predict
+import matplotlib.pyplot as plt
 
 
 # Load the train and test data
-reader = csv.reader(open("train.csv", "rb"), delimiter=",")
-x = list(reader)
-train_data = np.array(x).astype("float")
-reader = csv.reader(open("test.csv", "rb"), delimiter=",")
-x = list(reader)
-test_data = np.array(x).astype("float")
 
 reader = csv.reader(open("micro_dataset2.csv", "rb"), delimiter=",")
-x = list(reader)
-micro_data = np.array(x).astype("float")
-size = len(micro_data)
-test_size = math.ceil(size/5)
-train_size = size - test_size
-train_data = micro_data[:int(train_size), :]
-test_data = micro_data[int(test_size):, :]
-print "train"
-print train_data
-print "test"
-print test_data
+micro_benchmark_dataset = np.array(list(reader)).astype("float")
 
+X = micro_benchmark_dataset[:, :-1]
+X = np.log10(X)
+y = micro_benchmark_dataset[:, micro_benchmark_dataset.shape[1] - 1]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-# Divide data into features and target
-X_train = train_data[:, :-1]
-Y_train = train_data[:, train_data.shape[1] - 1]
-X_test = test_data[:, :-1]
-Y_test = test_data[:, test_data.shape[1] - 1]
-
-# Remove columns with all zeros
-X = np.concatenate((X_train, X_test), axis=0)
-X = X[:, ~np.all(X == 0, axis=0)]
-X_train = X[0:len(X_train), :]
-X_test = X[len(X_train):len(X), :]
+print X_test, y_test
 
 # Create an instance of Neighbours Classifier and fit the data.
 h = .02
-logreg = linear_model.LogisticRegression(C=1e5)
-logreg.fit(X_train, Y_train)
+clf = linear_model.LogisticRegression(C=1e5)
+scores = cross_val_score(clf, X, y, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+predicted = cross_val_predict(clf, X, y, cv=5)
+print metrics.accuracy_score(y, predicted)
 
-# Predict with test data
-Z = logreg.predict(X_test)
-correct = 0
-for i in range(0, len(Z)):
-    if Z[i] == Y_test[i]:
-        correct += 1
-print "accuracy = " + str(float(correct) / float(len(Z)))
+clf.fit(X_train, y_train)
+
+# and plot the result
+plt.figure(1, figsize=(4, 3))
+plt.clf()
+plt.scatter(X.ravel(), y, color='black', zorder=20)
+X_test = np.linspace(0, np.amax(X), 300)
+
+
+def model(x):
+    return 1 / (1 + np.exp(-x))
+
+
+loss = model(X_test * clf.coef_ + clf.intercept_).ravel()
+plt.plot(X_test, loss + 1, color='red', linewidth=3)
+plt.show()
+
